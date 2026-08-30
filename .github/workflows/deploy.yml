@@ -31,13 +31,36 @@ jobs:
           bun-version: latest
 
       - name: Install dependencies
-        run: bun install
+        run: bun install --frozen-lockfile
 
       - name: Build production bundle
         run: bun run build
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
+      - name: Verify build output
+        run: |
+          if [ ! -d "dist" ]; then
+            echo "Error: dist directory does not exist!"
+            exit 1
+          fi
+
+          if [ ! -f "dist/index.html" ]; then
+            echo "Error: dist/index.html does not exist!"
+            exit 1
+          fi
+
+          echo "=== Contents of dist/index.html ==="
+          cat dist/index.html
+          echo ""
+
+          echo "=== Generated dist assets ==="
+          find dist -maxdepth 2 -type f
+
+          if grep -q "/src/main.tsx" dist/index.html; then
+            echo "Error: dist/index.html contains uncompiled source reference '/src/main.tsx'!"
+            exit 1
+          fi
+
+          echo "Build verification passed: dist/index.html correctly references compiled production assets."
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
@@ -47,3 +70,4 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
