@@ -1,0 +1,85 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // User Profiles
+    match /users/{userId} {
+      allow read: if true;
+      allow create, update: if isOwner(userId);
+      allow delete: if false;
+    }
+
+    // Properties Listings
+    match /properties/{propertyId} {
+      // Anyone can browse properties
+      allow read: if true;
+      // Only authenticated users can create properties, and ownerId must match their auth UID
+      allow create: if isAuthenticated() && request.resource.data.ownerId == request.auth.uid;
+      // Only the owning owner can update or delete their property
+      allow update, delete: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
+    }
+
+    // Favorites
+    match /favorites/{favoriteId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // Enquiries
+    match /enquiries/{enquiryId} {
+      // Tenant or property owner can read the enquiry
+      allow read: if isAuthenticated() && (
+        resource.data.tenantId == request.auth.uid || 
+        resource.data.ownerId == request.auth.uid
+      );
+      // Tenant can create enquiry
+      allow create: if isAuthenticated() && request.resource.data.tenantId == request.auth.uid;
+      // Owner or tenant can update (e.g. status changes)
+      allow update: if isAuthenticated() && (
+        resource.data.tenantId == request.auth.uid || 
+        resource.data.ownerId == request.auth.uid
+      );
+      allow delete: if isAuthenticated() && resource.data.tenantId == request.auth.uid;
+    }
+
+    // Visit Requests
+    match /visitRequests/{requestId} {
+      // Tenant or property owner can read the visit request
+      allow read: if isAuthenticated() && (
+        resource.data.tenantId == request.auth.uid || 
+        resource.data.ownerId == request.auth.uid
+      );
+      // Tenant can create visit request
+      allow create: if isAuthenticated() && request.resource.data.tenantId == request.auth.uid;
+      // Owner or tenant can update status (accept, reject, reschedule)
+      allow update: if isAuthenticated() && (
+        resource.data.tenantId == request.auth.uid || 
+        resource.data.ownerId == request.auth.uid
+      );
+      allow delete: if isAuthenticated() && resource.data.tenantId == request.auth.uid;
+    }
+
+    // Colleges
+    match /colleges/{collegeId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // Reviews
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+  }
+}

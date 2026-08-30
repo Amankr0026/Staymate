@@ -1,0 +1,10 @@
+{
+  "name": "StayMate",
+  "description": "Student-focused PG and accommodation discovery platform near colleges and universities. Find your perfect stay near campus.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
